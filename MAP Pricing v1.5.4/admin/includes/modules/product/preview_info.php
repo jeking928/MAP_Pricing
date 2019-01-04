@@ -23,7 +23,7 @@ if (zen_not_null($_POST)) {
                                   p.products_weight, p.products_date_added, p.products_last_modified,
                                   p.products_date_available, p.products_status, p.manufacturers_id,
                                   p.products_quantity_order_min, p.products_quantity_order_units, p.products_priced_by_attribute,
-                                       p.map_enabled, p.map_price,
+                                  p.map_enabled, p.map_price,
                                   p.product_is_free, p.product_is_call, p.products_quantity_mixed,
                                   p.product_is_always_free_shipping, p.products_qty_box_status, p.products_quantity_order_max,
                                   p.products_sort_order

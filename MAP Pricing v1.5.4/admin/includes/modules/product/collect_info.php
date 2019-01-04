@@ -43,10 +43,10 @@ $parameters = array(
   'products_quantity_order_min' => '1',
   'products_quantity_order_units' => '1',
   'products_priced_by_attribute' => '0',
-					   //MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : START
-                       'map_enabled' => '',
-                       'map_price' => '',
-					   //MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : END
+  //MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : START
+  'map_enabled' => '',
+  'map_price' => '',
+  //MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : END
   'product_is_free' => '0',
   'product_is_call' => '0',
   'products_quantity_mixed' => '1',
@@ -71,7 +71,7 @@ if (isset($_GET['pID']) && empty($_POST)) {
                                   products_date_available, p.products_status, p.products_tax_class_id,
                                   p.manufacturers_id,
                                   p.products_quantity_order_min, p.products_quantity_order_units, p.products_priced_by_attribute,
-                                      p.map_enabled, p.map_price,
+                                  p.map_enabled, p.map_price,
                                   p.product_is_free, p.product_is_call, p.products_quantity_mixed,
                                   p.product_is_always_free_shipping, p.products_qty_box_status, p.products_quantity_order_max,
                                   p.products_sort_order,
@@ -330,11 +330,14 @@ function updateGross_frommap() {
       <?php echo ($pInfo->products_priced_by_attribute == 1 ? '<span class="help-block errorText">' . TEXT_PRODUCTS_PRICED_BY_ATTRIBUTES_EDIT . '</span>' : ''); ?>
     </div>
   </div>
-  <!-- SLICK RICKY DESIGN (www.slickricky.com) EDIT -->
-          <tr bgcolor="#ebeb77">
-            <td class="main">Enable MAP Pricing?</td>
-            <td class="main"><?php echo zen_draw_separator('pixel_trans.gif', '24', '15') . '&nbsp;' . zen_draw_radio_field('map_enabled', '1', $is_map_enabled) . '&nbsp; Yes ' . zen_draw_radio_field('map_enabled', '0', $not_map_enabled) . ' No ' . ($pInfo->map_enabled == 1 ? '<span class="errorText">*Will not display price except in the shopping cart.</span>' : ''); ?></td>
-          </tr>
+<!-- SLICK RICKY DESIGN (www.slickricky.com) EDIT -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Enable MAP Pricing?</label>
+    <div class="col-sm-9 col-md-6">
+      <label class="radio-inline"><?php echo zen_draw_radio_field('map_enabled', '1', ($pInfo->map_enabled == 1)) . TEXT_PRODUCT_IS_PRICED_BY_ATTRIBUTE; ?></label>
+      <label class="radio-inline"><?php echo zen_draw_radio_field('map_enabled', '0', ($pInfo->map_enabled == 0)) . TEXT_PRODUCT_NOT_PRICED_BY_ATTRIBUTE; ?></label>
+    </div>
+  </div>
 <!-- END EDIT (www.slickricky.com) -->
   <div class="well" style="color: #31708f;background-color: #d9edf7;border-color: #bce8f1;;padding: 10px 10px 0 0;">
     <div class="form-group">
@@ -343,14 +346,16 @@ function updateGross_frommap() {
           <?php echo zen_draw_pull_down_menu('products_tax_class_id', $tax_class_array, $pInfo->products_tax_class_id, 'onchange="updateGross()" class="form-control"'); ?>
       </div>
     </div>
-
-		  <!-- MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : START -->
-          <tr bgcolor="#ebeb77">
-            <td class="main">MAP Price (the lowest price you can advertise)</td>
-            <td class="main"><?php echo zen_draw_separator('pixel_trans.gif', '24', '15') . '&nbsp;' . zen_draw_input_field('map_price', $pInfo->map_price, ''); ?><span class="errorText">*Leave to 0, if you do not want to display the map price.</span></td>
-          </tr>
-		  <!-- MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : END -->
-		      <div class="form-group">
+<!-- MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : START -->
+	<div class="form-group">
+        <label class="col-sm-3 control-label">MAP Price (the lowest price you can advertise)</label>
+      <div class="col-sm-9 col-md-6">
+          <?php echo zen_draw_input_field('map_price', $pInfo->map_price, 'onkeyup="updateGross()" class="form-control"'); ?>
+		  <span class="errorText">*Leave to 0, if you do not want to display the map price.</span>
+      </div>
+    </div>
+<!-- MAP Pricing by SlickRicky Design : http://www.slickricky.com/ : END -->
+	<div class="form-group">
         <?php echo zen_draw_label(TEXT_PRODUCTS_PRICE_NET, 'products_price', 'class="col-sm-3 control-label"'); ?>
       <div class="col-sm-9 col-md-6">
           <?php echo zen_draw_input_field('products_price', $pInfo->products_price, 'onkeyup="updateGross()" class="form-control"'); ?>
