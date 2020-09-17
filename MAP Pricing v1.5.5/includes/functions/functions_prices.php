@@ -2,11 +2,10 @@
 /**
  * functions_prices
  *
- * @package functions
- * @copyright Copyright 2003-2018 Zen Cart Development Team
+ * @copyright Copyright 2003-2020 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: mc12345678 Tue May 8 00:42:18 2018 -0400 Modified in v1.5.6 $
+ * @version $Id: DrByte 2020 May 19 Modified in v1.5.7 $
  */
 
 ////
@@ -122,8 +121,23 @@
 ////
 // computes products_price + option groups lowest attributes price of each group when on
   function zen_get_products_base_price($products_id) {
-    global $db;
+      global $db, $zco_notifier;
+    
+      // -----
+      // Give an observer the chance to override the product's base price.
+      //
+      $base_price_is_handled = false;
+      $products_base_price = 0;
+      $zco_notifier->notify('ZEN_GET_PRODUCTS_BASE_PRICE', $products_id, $products_base_price, $base_price_is_handled);
+      if ($base_price_is_handled === true) {
+          return $products_base_price;
+      }
+      
       $product_check = $db->Execute("select products_price, products_priced_by_attribute from " . TABLE_PRODUCTS . " where products_id = '" . (int)$products_id . "'");
+
+      if ($product_check->EOF) {
+        return $products_base_price;
+      }
 
 // is there a products_price to add to attributes
       $products_price = $product_check->fields['products_price'];
@@ -165,11 +179,11 @@
 // 2 = Can browse but no prices
     // verify display of prices
       switch (true) {
-        case (CUSTOMERS_APPROVAL == '1' and $_SESSION['customer_id'] == ''):
+        case (CUSTOMERS_APPROVAL == '1' && !zen_is_logged_in()):
         // customer must be logged in to browse
         return '';
         break;
-        case (CUSTOMERS_APPROVAL == '2' and $_SESSION['customer_id'] == ''):
+        case (CUSTOMERS_APPROVAL == '2' && !zen_is_logged_in()):
         // customer may browse but no prices
         return TEXT_LOGIN_FOR_PRICE_PRICE;
         break;
@@ -177,11 +191,11 @@
         // customer may browse but no prices
         return TEXT_LOGIN_FOR_PRICE_PRICE_SHOWROOM;
         break;
-        case ((CUSTOMERS_APPROVAL_AUTHORIZATION != '0' and CUSTOMERS_APPROVAL_AUTHORIZATION != '3') and $_SESSION['customer_id'] == ''):
+        case (CUSTOMERS_APPROVAL_AUTHORIZATION != '0' && CUSTOMERS_APPROVAL_AUTHORIZATION != '3' && !zen_is_logged_in()):
         // customer must be logged in to browse
         return TEXT_AUTHORIZATION_PENDING_PRICE;
         break;
-        case ((CUSTOMERS_APPROVAL_AUTHORIZATION != '0' and CUSTOMERS_APPROVAL_AUTHORIZATION != '3') and $_SESSION['customers_authorization'] > '0'):
+        case (CUSTOMERS_APPROVAL_AUTHORIZATION != '0' && CUSTOMERS_APPROVAL_AUTHORIZATION != '3' && (int)$_SESSION['customers_authorization'] > 0):
         // customer must be logged in to browse
         return TEXT_AUTHORIZATION_PENDING_PRICE;
         break;
@@ -558,7 +572,10 @@ $map_price = $result->fields['map_price'];
     switch (true) {
       case ($_SESSION['cart']->in_cart_mixed($product_id) == 0 ):
         if ($check_min >= $check_units) {
-          $buy_now_qty = $check_min;
+          // Set the buy now quantity (associated product is not yet in the cart) to the first value satisfying both the minimum and the units.
+          $buy_now_qty = $check_units * ceil($check_min/$check_units);
+          // Uncomment below to set the buy now quantity to the value of the minimum required regardless if it is a multiple of the units.
+          //$buy_now_qty = $check_min;
         } else {
           $buy_now_qty = $check_units;
         }
@@ -1227,13 +1244,13 @@ If a special exist * 10
 
 ////
 // attributes final price
-  function zen_get_attributes_price_final($attribute, $qty = 1, $pre_selected, $include_onetime = 'false', $prod_priced_by_attr = false, $attributes_discounted = 0) {
+  function zen_get_attributes_price_final($attribute, $qty = 1, $pre_selected, $include_onetime = 'false', $prod_priced_by_attr = false, $attributes_discounted = 0, $include_products_price_in = false) {
     global $db;
 
     $attributes_price_final = 0;
 
-    if ($pre_selected == '' or $attribute != $pre_selected->fields["products_attributes_id"]) {
-      $pre_selected = $db->Execute("select pa.* from " . TABLE_PRODUCTS_ATTRIBUTES . " pa where pa.products_attributes_id= '" . (int)$attribute . "'");
+    if (empty($pre_selected) || $attribute != $pre_selected->fields["products_attributes_id"]) {
+      $pre_selected = $db->Execute("SELECT pa.* FROM " . TABLE_PRODUCTS_ATTRIBUTES . " pa WHERE pa.products_attributes_id = " . (int)$attribute);
     } else {
       // use existing select
     }
@@ -1241,19 +1258,27 @@ If a special exist * 10
     // normal attributes price discounted by sales/specials or not discounted if neither a sale nor a special
     if ($pre_selected->fields["price_prefix"] == '-') {
 //      $attributes_price_final -= $pre_selected->fields["options_values_price"];
-      $attributes_price_final -= zen_get_discount_calc($pre_selected->fields["products_id"], $pre_selected->fields["products_attributes_id"], ($prod_priced_by_attr ? zen_products_lookup($pre_selected->fields["products_id"], 'products_price') : 0) + ($prod_priced_by_attr ? -1 : 1) * $pre_selected->fields["options_values_price"]);
+      $attributes_price_final -= zen_get_discount_calc($pre_selected->fields["products_id"], $pre_selected->fields["products_attributes_id"], ($prod_priced_by_attr ? $products_price = zen_products_lookup($pre_selected->fields["products_id"], 'products_price') : 0) + ($prod_priced_by_attr ? -1 : 1) * $pre_selected->fields["options_values_price"]);
     } else {
 //      $attributes_price_final += $pre_selected->fields["options_values_price"];
-      $attributes_price_final += zen_get_discount_calc($pre_selected->fields["products_id"], $pre_selected->fields["products_attributes_id"], $pre_selected->fields["options_values_price"] + ($prod_priced_by_attr ? zen_products_lookup($pre_selected->fields["products_id"], 'products_price') : 0));
+      $attributes_price_final += zen_get_discount_calc($pre_selected->fields["products_id"], $pre_selected->fields["products_attributes_id"], ($prod_priced_by_attr ? $products_price = zen_products_lookup($pre_selected->fields["products_id"], 'products_price') : 0) + $pre_selected->fields["options_values_price"]);
     }
     // qty discounts
     $attributes_price_final += zen_get_attributes_qty_prices_onetime($pre_selected->fields["attributes_qty_prices"], $qty);
 
     // price factor
-    if ($attributes_discounted == 1) {
-      $display_normal_price = zen_get_products_actual_price($pre_selected->fields["products_id"]);
-    } else {
-      $display_normal_price = zen_get_products_base_price($pre_selected->fields["products_id"]);
+    /*
+    $display_normal_price = zen_get_products_actual_price($pre_selected->fields["products_id"]);
+    */
+    $display_normal_price = zen_get_discount_calc($pre_selected->fields['products_id'], $pre_selected->fields['products_attributes_id'], zen_products_lookup($pre_selected->fields['products_id'], 'products_price') + $pre_selected->fields['options_values_price']);
+
+    // if the product is priced by attributes
+    if ($prod_priced_by_attr && empty($pre_selected->fields['options_values_price'])) {
+      if ($pre_selected->fields['price_prefix'] == '-') {
+        $attributes_price_final += $display_normal_price;
+      } else {
+        $attributes_price_final -= $display_normal_price;
+      }
     }
     $display_special_price = zen_get_products_special_price($pre_selected->fields["products_id"]);
 
@@ -1276,10 +1301,10 @@ If a special exist * 10
 
 ////
 // attributes final price onetime
-  function zen_get_attributes_price_final_onetime($attribute, $qty= 1, $pre_selected_onetime) {
+  function zen_get_attributes_price_final_onetime($attribute, $qty= 1, $pre_selected_onetime = null) {
     global $db;
 
-    if ($pre_selected_onetime == '' or $attribute != $pre_selected_onetime->fields["products_attributes_id"]) {
+    if (empty($pre_selected_onetime) || $attribute != $pre_selected_onetime->fields["products_attributes_id"]) {
       $pre_selected_onetime = $db->Execute("select pa.* from " . TABLE_PRODUCTS_ATTRIBUTES . " pa where pa.products_attributes_id= '" . (int)$attribute . "'");
     } else {
       // use existing select
@@ -1333,7 +1358,7 @@ If a special exist * 10
 
 ////
 // calculate words price
-  function zen_get_word_count_price($string, $free=0, $price) {
+  function zen_get_word_count_price($string, $free = 0, $price = 0) {
     $word_count = zen_get_word_count($string, $free);
     if ($word_count >= 1) {
       return ($word_count * $price);
@@ -1364,7 +1389,7 @@ If a special exist * 10
 
 ////
 // calculate letters price
-  function zen_get_letters_count_price($string, $free=0, $price) {
+  function zen_get_letters_count_price($string, $free = 0, $price = 0) {
 
     $letters_price = zen_get_letters_count($string, $free) * $price;
     if ($letters_price <= 0) {
@@ -1406,8 +1431,6 @@ If a special exist * 10
             // priced by attributes
             if ($check_amount != 0) {
               $discounted_price = $check_amount - ($check_amount * ($products_discounts_query->fields['discount_price']/100));
-//echo 'ID#' . $product_id . ' Amount is: ' . $check_amount . ' discount: ' . $discounted_price . '<br />';
-//echo 'I SEE 2 for ' . $products_query->fields['products_discount_type'] . ' - ' . $products_query->fields['products_discount_type_from'] . ' - '. $check_amount . ' new: ' . $discounted_price . ' qty: ' . $check_qty;
             } else {
               $discounted_price = $display_price - ($display_price * ($products_discounts_query->fields['discount_price']/100));
             }
