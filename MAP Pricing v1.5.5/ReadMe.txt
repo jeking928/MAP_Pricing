@@ -1,4 +1,4 @@
-MAP Pricing v1.5.5
+MAP Pricing v1.5.7
 
 This is a revamped version of MAP Pricing v1.0 by Richard Kersey (www.slickricky.com).  MAP Pricing = Manufacturer's Advertised Price.  It is used when you want to sell something for a price that is lower than what you are able to advertise on your website.  The actual price will only display in the cart.
 
@@ -48,4 +48,4 @@ v1.5.1 - Sept 2012 - updated by DrByte for ZC v1.5.1 specifically. NOTE: require
 v1.5.3 - 2014 updated by DrByte to make it work with ZC v1.5.0-thru-v1.5.3
 V1.5.4 - 6/13/2017 updates by jeking to be compatible with ZC 1.5.5e
 V1.5.5 - 1/4/2019 updates by jeking to be compatible with ZC 1.5.6
-
+V1.5.7 - 10/25/2020 updates by jeking to be compatible with ZC 1.5.7
