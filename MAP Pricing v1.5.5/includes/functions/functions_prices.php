@@ -403,6 +403,7 @@ $map_price = $result->fields['map_price'];
   } else {
     return $final_display_price . $free_tag . $call_tag;
   }
+}
 //Map Pricing by SlickRicky Design : http://www.slickricky.com : END
 ////
 // Is the product free?
